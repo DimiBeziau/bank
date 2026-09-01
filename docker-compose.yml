@@ -1,11 +1,22 @@
 services:
-  app:
+  bank:
+    container_name: bank
     build: .
-    ports:
-      - "3000:3000"
+    # Le port n'est plus publié directement sur l'hôte : Nginx Proxy Manager
+    # atteint le conteneur via le réseau Docker partagé (voir `networks` plus
+    # bas), pas via localhost:3000. Décommenter si besoin d'un accès direct
+    # (debug local sans passer par le proxy) :
+    # ports:
+    #   - "3000:3000"
     environment:
       DATABASE_URL: "file:/app/data/bank.db"
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET manquant — copier .env.example vers .env et le renseigner}
     volumes:
       - ./data:/app/data
     restart: unless-stopped
+    networks:
+      - public
+
+networks:
+  public:
+    external: true
