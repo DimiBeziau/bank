@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/app/data/bank.db"
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET manquant — copier .env.example vers .env et le renseigner}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

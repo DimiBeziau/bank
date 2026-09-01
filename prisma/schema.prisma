@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum PeriodicityUnit {
+  DAY
+  WEEK
+  MONTH
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  settings      Settings?
+  categories    Category[]
+  expenses      Expense[]
+  wishlistItems WishlistItem[]
+}
+
+model Settings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startingCapital Float
+  cycleStartDay   Int
+  updatedAt       DateTime @updatedAt
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  color         String
+  expenses      Expense[]
+  wishlistItems WishlistItem[]
+
+  @@unique([userId, name])
+}
+
+model Expense {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  amount           Float
+  categoryId       String
+  category         Category         @relation(fields: [categoryId], references: [id])
+  isOneTime        Boolean          @default(false)
+  periodicityUnit  PeriodicityUnit?
+  periodicityValue Int?
+  dueDate          DateTime
+  isChecked        Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model WishlistItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  budget      Float
+  isPurchased Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}

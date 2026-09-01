@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.*
+prisma/dev.db
+prisma/dev.db-journal
+data
+tasks
+tests
+*.log
+.claude
+.windsurf
+.agents
