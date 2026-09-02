@@ -17,14 +17,18 @@ export function ExpenseList({
   categories: CategoryDTO[];
 }) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "recurring" | "oneTime">("all");
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const filtered = useMemo(
     () =>
-      categoryFilter === "all"
-        ? expenses
-        : expenses.filter((e) => e.categoryId === categoryFilter),
-    [expenses, categoryFilter],
+      expenses
+        .filter((e) => categoryFilter === "all" || e.categoryId === categoryFilter)
+        .filter((e) => {
+          if (typeFilter === "all") return true;
+          return typeFilter === "oneTime" ? e.isOneTime : !e.isOneTime;
+        }),
+    [expenses, categoryFilter, typeFilter],
   );
 
   return (
@@ -32,6 +36,15 @@ export function ExpenseList({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Dépenses</h2>
         <div className="flex items-center gap-2">
+          <Select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+            className="w-auto"
+          >
+            <option value="all">Ponctuelles et périodiques</option>
+            <option value="recurring">Périodiques</option>
+            <option value="oneTime">Ponctuelles</option>
+          </Select>
           <Select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}

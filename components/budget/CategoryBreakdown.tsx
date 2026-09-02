@@ -1,4 +1,7 @@
+import { Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { Button } from "@/components/ui/Button";
+import { CategoryModal } from "@/components/budget/CategoryModal";
 import { formatCurrency } from "@/lib/format";
 
 export interface CategoryTotal {
@@ -14,7 +17,17 @@ export function CategoryBreakdown({ totals }: { totals: CategoryTotal[] }) {
 
   return (
     <GlassCard>
-      <h2 className="mb-4 text-lg font-bold">Répartition par catégorie</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Répartition par catégorie</h2>
+        <CategoryModal
+          trigger={
+            <Button variant="ghost" className="gap-1">
+              <Plus size={16} />
+              Catégorie
+            </Button>
+          }
+        />
+      </div>
       {nonEmpty.length === 0 && (
         <p className="text-muted text-sm">Aucune dépense prise en compte ce cycle-ci.</p>
       )}
