@@ -4,20 +4,36 @@ import { useState, useTransition } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
-import { createCategory } from "@/lib/actions/categories";
+import { createCategory, updateCategory } from "@/lib/actions/categories";
+import type { CategoryDTO } from "@/lib/types";
 
 const DEFAULT_COLOR = "#a78bfa";
 
-export function CategoryModal({ trigger }: { trigger: React.ReactNode }) {
+interface CategoryModalProps {
+  trigger: React.ReactNode;
+  category?: CategoryDTO;
+}
+
+export function CategoryModal({ trigger, category }: CategoryModalProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const isEdit = Boolean(category);
 
   return (
-    <Modal open={open} onOpenChange={setOpen} title="Nouvelle catégorie" trigger={trigger}>
+    <Modal
+      open={open}
+      onOpenChange={setOpen}
+      title={isEdit ? "Modifier la catégorie" : "Nouvelle catégorie"}
+      trigger={trigger}
+    >
       <form
         action={(formData) => {
           startTransition(async () => {
-            await createCategory(formData);
+            if (category) {
+              await updateCategory(category.id, formData);
+            } else {
+              await createCategory(formData);
+            }
             setOpen(false);
           });
         }}
@@ -25,14 +41,19 @@ export function CategoryModal({ trigger }: { trigger: React.ReactNode }) {
       >
         <Field>
           Nom
-          <Input name="name" maxLength={40} required autoFocus />
+          <Input name="name" maxLength={40} defaultValue={category?.name} required autoFocus />
         </Field>
         <Field>
           Couleur
-          <Input name="color" type="color" defaultValue={DEFAULT_COLOR} className="h-10 p-1" />
+          <Input
+            name="color"
+            type="color"
+            defaultValue={category?.color ?? DEFAULT_COLOR}
+            className="h-10 p-1"
+          />
         </Field>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Enregistrement…" : "Ajouter"}
+          {isPending ? "Enregistrement…" : isEdit ? "Enregistrer" : "Ajouter"}
         </Button>
       </form>
     </Modal>

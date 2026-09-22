@@ -224,10 +224,5 @@ sensible aux erreurs silencieuses.
 
 ## Limites connues
 
-- Pas d'écran de gestion des catégories : sept catégories par défaut sont
-  créées automatiquement à la création de chaque compte
-  (`lib/defaultCategories.ts`). Les Server Actions
-  (`lib/actions/categories.ts`) existent et peuvent être branchées à une UI
-  si le besoin apparaît.
 - Pas de réinitialisation de mot de passe (pas d'envoi d'email configuré) :
   en cas d'oubli, il faut recréer un compte ou éditer `passwordHash` en base.

@@ -13,7 +13,8 @@ export interface CategoryTotal {
 
 export function CategoryBreakdown({ totals }: { totals: CategoryTotal[] }) {
   const max = Math.max(1, ...totals.map((t) => t.amount));
-  const nonEmpty = totals.filter((t) => t.amount > 0);
+  const total = totals.reduce((sum, t) => sum + t.amount, 0);
+  const nonEmpty = totals.filter((t) => t.amount > 0).sort((a, b) => b.amount - a.amount);
 
   return (
     <GlassCard>
@@ -36,7 +37,10 @@ export function CategoryBreakdown({ totals }: { totals: CategoryTotal[] }) {
           <div key={t.id}>
             <div className="mb-1 flex justify-between text-xs">
               <span>{t.name}</span>
-              <span className="text-muted">{formatCurrency(t.amount)}</span>
+              <span className="text-muted">
+                {formatCurrency(t.amount)}
+                {total > 0 && ` · ${Math.round((t.amount / total) * 100)}%`}
+              </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div

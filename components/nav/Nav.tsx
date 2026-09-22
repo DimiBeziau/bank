@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Heart, LogOut } from "lucide-react";
+import { LayoutGrid, Heart, Tag, LogOut } from "lucide-react";
 import clsx from "clsx";
 import { logout } from "@/lib/actions/auth";
 
 const LINKS = [
   { href: "/budget", label: "Budget", icon: LayoutGrid },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
+  { href: "/categories", label: "Catégories", icon: Tag },
 ];
 
 const PUBLIC_PATHS = ["/login", "/signup"];
