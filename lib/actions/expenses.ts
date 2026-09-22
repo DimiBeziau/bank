@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUserId } from "@/lib/auth/session";
 import { expenseSchema } from "@/lib/validation/schemas";
+import { getCycleBoundsOffset } from "@/lib/services/periodicity";
+import { cycleKeyOf } from "@/lib/services/forecast";
 
 export async function getExpenses() {
   const userId = await requireUserId();
@@ -12,6 +14,22 @@ export async function getExpenses() {
     include: { category: true },
     orderBy: { dueDate: "asc" },
   });
+}
+
+async function cycleKeyForOffset(userId: string, offset: number): Promise<string> {
+  const settings = await prisma.settings.findUnique({ where: { userId } });
+  const cycleStartDay = settings?.cycleStartDay ?? 1;
+  return cycleKeyOf(getCycleBoundsOffset(new Date(), cycleStartDay, offset));
+}
+
+export async function getCycleChecks(offset: number): Promise<string[]> {
+  const userId = await requireUserId();
+  const cycleKey = await cycleKeyForOffset(userId, offset);
+  const checks = await prisma.expenseCycleCheck.findMany({
+    where: { userId, cycleKey },
+    select: { expenseId: true },
+  });
+  return checks.map((c) => c.expenseId);
 }
 
 function parseExpenseForm(formData: FormData) {
@@ -25,7 +43,6 @@ function parseExpenseForm(formData: FormData) {
     dueDate: formData.get("dueDate"),
     periodicityUnit: isOneTime ? undefined : (formData.get("periodicityUnit") ?? undefined),
     periodicityValue: isOneTime ? undefined : (formData.get("periodicityValue") ?? undefined),
-    isChecked: formData.get("isChecked") === "on" || formData.get("isChecked") === "true",
   });
 }
 
@@ -43,7 +60,6 @@ export async function createExpense(formData: FormData) {
       dueDate: parsed.dueDate,
       periodicityUnit: parsed.isOneTime ? null : (parsed.periodicityUnit ?? null),
       periodicityValue: parsed.isOneTime ? null : (parsed.periodicityValue ?? null),
-      isChecked: parsed.isChecked,
     },
   });
 
@@ -64,16 +80,30 @@ export async function updateExpense(id: string, formData: FormData) {
       dueDate: parsed.dueDate,
       periodicityUnit: parsed.isOneTime ? null : (parsed.periodicityUnit ?? null),
       periodicityValue: parsed.isOneTime ? null : (parsed.periodicityValue ?? null),
-      isChecked: parsed.isChecked,
     },
   });
 
   revalidatePath("/budget");
 }
 
-export async function toggleExpenseChecked(id: string, isChecked: boolean) {
+export async function toggleExpenseChecked(id: string, offset: number, isChecked: boolean) {
   const userId = await requireUserId();
-  await prisma.expense.update({ where: { id, userId }, data: { isChecked } });
+
+  const expense = await prisma.expense.findFirst({ where: { id, userId }, select: { id: true } });
+  if (!expense) return;
+
+  const cycleKey = await cycleKeyForOffset(userId, offset);
+
+  if (isChecked) {
+    await prisma.expenseCycleCheck.upsert({
+      where: { expenseId_cycleKey: { expenseId: id, cycleKey } },
+      create: { expenseId: id, userId, cycleKey },
+      update: {},
+    });
+  } else {
+    await prisma.expenseCycleCheck.deleteMany({ where: { expenseId: id, userId, cycleKey } });
+  }
+
   revalidatePath("/budget");
 }
 

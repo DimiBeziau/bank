@@ -14,23 +14,38 @@ enum PeriodicityUnit {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
+  id            String              @id @default(cuid())
+  email         String              @unique
   passwordHash  String
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime            @default(now())
   settings      Settings?
   categories    Category[]
   expenses      Expense[]
   wishlistItems WishlistItem[]
+  incomeEntries IncomeEntry[]
+  expenseChecks ExpenseCycleCheck[]
 }
 
 model Settings {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  startingCapital Float
-  cycleStartDay   Int
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleStartDay Int
+  updatedAt     DateTime @updatedAt
+}
+
+/// Revenu mensuel récurrent : tombe une fois par cycle, le jour dayOfMonth.
+model IncomeEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Float
+  dayOfMonth Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Category {
@@ -46,30 +61,47 @@ model Category {
 }
 
 model Expense {
-  id               String           @id @default(cuid())
+  id               String              @id @default(cuid())
   userId           String
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   name             String
   amount           Float
   categoryId       String
-  category         Category         @relation(fields: [categoryId], references: [id])
-  isOneTime        Boolean          @default(false)
+  category         Category            @relation(fields: [categoryId], references: [id])
+  isOneTime        Boolean             @default(false)
   periodicityUnit  PeriodicityUnit?
   periodicityValue Int?
   dueDate          DateTime
-  isChecked        Boolean          @default(false)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  cycleChecks      ExpenseCycleCheck[]
+}
+
+/// "Cette dépense est prise en compte pour ce cycle."
+/// cycleKey = date de début du cycle en heure locale, format "YYYY-MM-DD" (jamais un DateTime,
+/// pour ne pas dépendre du fuseau horaire de stockage de l'adaptateur SQLite).
+model ExpenseCycleCheck {
+  id        String   @id @default(cuid())
+  expenseId String
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleKey  String
+  checkedAt DateTime @default(now())
+
+  @@unique([expenseId, cycleKey])
+  @@index([userId, cycleKey])
 }
 
 model WishlistItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  category    Category  @relation(fields: [categoryId], references: [id])
   budget      Float
-  isPurchased Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isPurchased Boolean   @default(false)
+  purchasedAt DateTime?
+  createdAt   DateTime  @default(now())
 }

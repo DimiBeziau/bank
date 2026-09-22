@@ -23,6 +23,8 @@ export async function getCategoriesWithUsage() {
     name: c.name,
     color: c.color,
     usageCount: c._count.expenses + c._count.wishlistItems,
+    expenseCount: c._count.expenses,
+    wishlistCount: c._count.wishlistItems,
   }));
 }
 
@@ -53,8 +55,19 @@ export async function updateCategory(id: string, formData: FormData) {
   revalidatePath("/categories");
 }
 
-export async function deleteCategory(id: string) {
+export type DeleteCategoryResult =
+  | { ok: true }
+  | { ok: false; reason: "IN_USE"; expenseCount: number; wishlistCount: number }
+  | { ok: false; reason: "NOT_FOUND" };
+
+export async function deleteCategory(
+  id: string,
+  options?: { cascade?: boolean },
+): Promise<DeleteCategoryResult> {
   const userId = await requireUserId();
+
+  const category = await prisma.category.findFirst({ where: { id, userId }, select: { id: true } });
+  if (!category) return { ok: false, reason: "NOT_FOUND" };
 
   const [expenseCount, wishlistCount] = await Promise.all([
     prisma.expense.count({ where: { categoryId: id, userId } }),
@@ -62,13 +75,26 @@ export async function deleteCategory(id: string) {
   ]);
 
   if (expenseCount > 0 || wishlistCount > 0) {
-    throw new Error(
-      "Cette catégorie est utilisée par des dépenses ou des souhaits. Réassignez-les avant de la supprimer.",
-    );
+    if (!options?.cascade) {
+      return { ok: false, reason: "IN_USE", expenseCount, wishlistCount };
+    }
+
+    await prisma.$transaction([
+      prisma.expenseCycleCheck.deleteMany({ where: { userId, expense: { categoryId: id } } }),
+      prisma.expense.deleteMany({ where: { categoryId: id, userId } }),
+      prisma.wishlistItem.deleteMany({ where: { categoryId: id, userId } }),
+      prisma.category.delete({ where: { id, userId } }),
+    ]);
+
+    revalidatePath("/budget");
+    revalidatePath("/wishlist");
+    revalidatePath("/categories");
+    return { ok: true };
   }
 
   await prisma.category.delete({ where: { id, userId } });
   revalidatePath("/budget");
   revalidatePath("/wishlist");
   revalidatePath("/categories");
+  return { ok: true };
 }

@@ -4,6 +4,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { CategoryModal } from "@/components/budget/CategoryModal";
 import { CategoryRow } from "@/components/budget/CategoryRow";
+import { pickUnusedColor } from "@/lib/palette";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function CategoriesPage() {
           <p className="text-muted text-sm">Gère les catégories utilisées par tes dépenses et souhaits.</p>
         </div>
         <CategoryModal
+          defaultColor={pickUnusedColor(categories.map((c) => c.color))}
           trigger={
             <Button variant="ghost" className="gap-1">
               <Plus size={16} />

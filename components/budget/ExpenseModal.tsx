@@ -11,9 +11,10 @@ interface ExpenseModalProps {
   categories: CategoryDTO[];
   expense?: ExpenseDTO;
   trigger: React.ReactNode;
+  defaultDueDate: string;
 }
 
-export function ExpenseModal({ categories, expense, trigger }: ExpenseModalProps) {
+export function ExpenseModal({ categories, expense, trigger, defaultDueDate }: ExpenseModalProps) {
   const [open, setOpen] = useState(false);
   const [isOneTime, setIsOneTime] = useState(expense?.isOneTime ?? false);
   const [isPending, startTransition] = useTransition();
@@ -84,7 +85,7 @@ export function ExpenseModal({ categories, expense, trigger }: ExpenseModalProps
           <Input
             name="dueDate"
             type="date"
-            defaultValue={expense?.dueDate.slice(0, 10)}
+            defaultValue={expense?.dueDate.slice(0, 10) ?? defaultDueDate}
             required
           />
         </Field>
@@ -115,13 +116,6 @@ export function ExpenseModal({ categories, expense, trigger }: ExpenseModalProps
             </Field>
           </div>
         )}
-
-        <Field>
-          <span className="flex items-center gap-2">
-            <input type="checkbox" name="isChecked" defaultChecked={expense?.isChecked} />
-            Prise en compte (déduite du budget du mois en cours)
-          </span>
-        </Field>
 
         <Button type="submit" disabled={isPending}>
           {isPending ? "Enregistrement…" : isEdit ? "Enregistrer" : "Ajouter"}

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { CategoryModal } from "@/components/budget/CategoryModal";
+import { CategoryDeleteDialog } from "@/components/budget/CategoryDeleteDialog";
 import { deleteCategory } from "@/lib/actions/categories";
 
 export interface CategoryWithUsage {
@@ -10,11 +11,13 @@ export interface CategoryWithUsage {
   name: string;
   color: string;
   usageCount: number;
+  expenseCount: number;
+  wishlistCount: number;
 }
 
 export function CategoryRow({ category }: { category: CategoryWithUsage }) {
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-1">
@@ -32,6 +35,7 @@ export function CategoryRow({ category }: { category: CategoryWithUsage }) {
 
         <CategoryModal
           category={category}
+          defaultColor={category.color}
           trigger={
             <button className="text-muted shrink-0 rounded-full p-1.5 hover:bg-white/10" aria-label="Modifier">
               <Pencil size={15} />
@@ -44,20 +48,20 @@ export function CategoryRow({ category }: { category: CategoryWithUsage }) {
           aria-label="Supprimer"
           disabled={isPending}
           onClick={() => {
-            setError(null);
-            startTransition(async () => {
-              try {
+            if (category.usageCount === 0) {
+              startTransition(async () => {
                 await deleteCategory(category.id);
-              } catch {
-                setError("Catégorie utilisée : réassignez ses dépenses/souhaits avant de la supprimer.");
-              }
-            });
+              });
+            } else {
+              setConfirmOpen(true);
+            }
           }}
         >
           <Trash2 size={15} />
         </button>
       </div>
-      {error && <p className="px-3 text-xs text-red-400">{error}</p>}
+
+      <CategoryDeleteDialog category={category} open={confirmOpen} onOpenChange={setConfirmOpen} />
     </div>
   );
 }

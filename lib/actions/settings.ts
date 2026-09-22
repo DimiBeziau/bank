@@ -12,7 +12,6 @@ export async function getSettings() {
     settings ?? {
       id: "",
       userId,
-      startingCapital: 0,
       cycleStartDay: 1,
       updatedAt: new Date(),
     }
@@ -22,7 +21,6 @@ export async function getSettings() {
 export async function saveSettings(formData: FormData) {
   const userId = await requireUserId();
   const parsed = settingsSchema.parse({
-    startingCapital: formData.get("startingCapital"),
     cycleStartDay: formData.get("cycleStartDay"),
   });
 

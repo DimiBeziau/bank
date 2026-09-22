@@ -3,6 +3,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { CategoryModal } from "@/components/budget/CategoryModal";
 import { formatCurrency } from "@/lib/format";
+import { pickUnusedColor } from "@/lib/palette";
 
 export interface CategoryTotal {
   id: string;
@@ -21,6 +22,7 @@ export function CategoryBreakdown({ totals }: { totals: CategoryTotal[] }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Répartition par catégorie</h2>
         <CategoryModal
+          defaultColor={pickUnusedColor(totals.map((t) => t.color))}
           trigger={
             <Button variant="ghost" className="gap-1">
               <Plus size={16} />
@@ -30,7 +32,7 @@ export function CategoryBreakdown({ totals }: { totals: CategoryTotal[] }) {
         />
       </div>
       {nonEmpty.length === 0 && (
-        <p className="text-muted text-sm">Aucune dépense prise en compte ce cycle-ci.</p>
+        <p className="text-muted text-sm">Aucune dépense ni achat pris en compte ce cycle-ci.</p>
       )}
       <div className="flex flex-col gap-3">
         {nonEmpty.map((t) => (

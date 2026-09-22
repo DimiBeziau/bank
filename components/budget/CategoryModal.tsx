@@ -7,14 +7,13 @@ import { Field, Input } from "@/components/ui/Input";
 import { createCategory, updateCategory } from "@/lib/actions/categories";
 import type { CategoryDTO } from "@/lib/types";
 
-const DEFAULT_COLOR = "#a78bfa";
-
 interface CategoryModalProps {
   trigger: React.ReactNode;
   category?: CategoryDTO;
+  defaultColor: string;
 }
 
-export function CategoryModal({ trigger, category }: CategoryModalProps) {
+export function CategoryModal({ trigger, category, defaultColor }: CategoryModalProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const isEdit = Boolean(category);
@@ -48,7 +47,7 @@ export function CategoryModal({ trigger, category }: CategoryModalProps) {
           <Input
             name="color"
             type="color"
-            defaultValue={category?.color ?? DEFAULT_COLOR}
+            defaultValue={category?.color ?? defaultColor}
             className="h-10 p-1"
           />
         </Field>

@@ -24,9 +24,16 @@ export interface WishlistItemDTO {
   categoryId: string;
   budget: number;
   isPurchased: boolean;
+  purchasedAt: string | null;
 }
 
 export interface SettingsDTO {
-  startingCapital: number;
   cycleStartDay: number;
+}
+
+export interface IncomeEntryDTO {
+  id: string;
+  name: string;
+  amount: number;
+  dayOfMonth: number;
 }

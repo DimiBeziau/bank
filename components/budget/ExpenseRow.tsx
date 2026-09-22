@@ -14,21 +14,26 @@ export function ExpenseRow({
   expense,
   category,
   categories,
+  cycleOffset,
+  defaultDueDate,
 }: {
   expense: ExpenseDTO;
   category: CategoryDTO | undefined;
   categories: CategoryDTO[];
+  cycleOffset: number;
+  defaultDueDate: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const checkDisabled = cycleOffset > 0;
 
   return (
     <div className="flex items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/5">
       <Checkbox
         checked={expense.isChecked}
-        disabled={isPending}
+        disabled={isPending || checkDisabled}
         onCheckedChange={(checked) => {
           startTransition(async () => {
-            await toggleExpenseChecked(expense.id, checked);
+            await toggleExpenseChecked(expense.id, cycleOffset, checked);
           });
         }}
       />
@@ -53,6 +58,7 @@ export function ExpenseRow({
       <ExpenseModal
         categories={categories}
         expense={expense}
+        defaultDueDate={defaultDueDate}
         trigger={
           <button className="text-muted shrink-0 rounded-full p-1.5 hover:bg-white/10" aria-label="Modifier">
             <Pencil size={15} />

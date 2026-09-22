@@ -12,9 +12,13 @@ import type { CategoryDTO, ExpenseDTO } from "@/lib/types";
 export function ExpenseList({
   expenses,
   categories,
+  cycleOffset,
+  defaultDueDate,
 }: {
   expenses: ExpenseDTO[];
   categories: CategoryDTO[];
+  cycleOffset: number;
+  defaultDueDate: string;
 }) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "recurring" | "oneTime">("all");
@@ -59,6 +63,7 @@ export function ExpenseList({
           </Select>
           <ExpenseModal
             categories={categories}
+            defaultDueDate={defaultDueDate}
             trigger={
               <Button className="gap-1">
                 <Plus size={16} />
@@ -79,6 +84,8 @@ export function ExpenseList({
             expense={expense}
             category={categoryById.get(expense.categoryId)}
             categories={categories}
+            cycleOffset={cycleOffset}
+            defaultDueDate={defaultDueDate}
           />
         ))}
       </div>

@@ -13,7 +13,14 @@ export default async function WishlistPage() {
   const totalEngaged = items.filter((i) => i.isPurchased).reduce((sum, i) => sum + i.budget, 0);
   const totalPlanned = items.reduce((sum, i) => sum + i.budget, 0);
 
-  const itemDTOs: WishlistItemDTO[] = items;
+  const itemDTOs: WishlistItemDTO[] = items.map((i) => ({
+    id: i.id,
+    name: i.name,
+    categoryId: i.categoryId,
+    budget: i.budget,
+    isPurchased: i.isPurchased,
+    purchasedAt: i.purchasedAt ? i.purchasedAt.toISOString() : null,
+  }));
   const categoryDTOs: CategoryDTO[] = categories;
 
   return (

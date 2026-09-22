@@ -8,8 +8,13 @@ export const credentialsSchema = z.object({
 });
 
 export const settingsSchema = z.object({
-  startingCapital: z.coerce.number().finite(),
   cycleStartDay: z.coerce.number().int().min(1).max(28),
+});
+
+export const incomeEntrySchema = z.object({
+  name: z.string().trim().min(1).max(40),
+  amount: z.coerce.number().finite(),
+  dayOfMonth: z.coerce.number().int().min(1).max(28),
 });
 
 export const categorySchema = z.object({
@@ -29,7 +34,6 @@ export const expenseSchema = z
     dueDate: z.coerce.date(),
     periodicityUnit: periodicityUnitSchema.optional(),
     periodicityValue: z.coerce.number().int().positive().optional(),
-    isChecked: z.coerce.boolean().default(false),
   })
   .refine((data) => data.isOneTime || (data.periodicityUnit && data.periodicityValue), {
     message: "Une dépense périodique doit avoir une unité et une valeur de périodicité",

@@ -1,7 +1,6 @@
 import {
   type CycleBounds,
   type PeriodicityUnit,
-  getCurrentCycleBounds,
   getCycleBoundsOffset,
   occurrencesInRange,
 } from "./periodicity";
@@ -11,7 +10,6 @@ export interface ExpenseInput {
   name: string;
   amount: number;
   isOneTime: boolean;
-  isChecked: boolean;
   dueDate: Date;
   periodicityUnit: PeriodicityUnit | null;
   periodicityValue: number | null;
@@ -21,6 +19,14 @@ export interface WishlistInput {
   id: string;
   budget: number;
   isPurchased: boolean;
+  purchasedAt: Date | null;
+}
+
+export interface IncomeInput {
+  id: string;
+  name: string;
+  amount: number;
+  dayOfMonth: number;
 }
 
 /** Une occurrence de la dépense tombe-t-elle dans le cycle donné ? */
@@ -39,70 +45,110 @@ export function isExpenseDueInCycle(expense: ExpenseInput, cycle: CycleBounds): 
   );
 }
 
-export interface CurrentCycleBudget {
+export function isWishlistItemPurchasedInCycle(item: WishlistInput, cycle: CycleBounds): boolean {
+  return (
+    item.isPurchased &&
+    item.purchasedAt !== null &&
+    item.purchasedAt >= cycle.start &&
+    item.purchasedAt < cycle.end
+  );
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Clé canonique d'un cycle : date de début en heure locale, "YYYY-MM-DD". */
+export function cycleKeyOf(cycle: CycleBounds): string {
+  const d = cycle.start;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** Revenu total d'un cycle : chaque entrée récurrente tombe une fois par cycle. */
+export function totalIncomeForCycle(incomes: IncomeInput[]): number {
+  return incomes.reduce((sum, i) => sum + i.amount, 0);
+}
+
+export interface CycleBudget {
+  offset: number;
   cycle: CycleBounds;
+  cycleKey: string;
+  totalIncome: number;
+  dueExpenses: number;
   deductedExpenses: number;
   deductedWishlist: number;
   remaining: number;
+  projectedRemaining: number;
 }
 
 /**
- * Budget restant du cycle courant = capital − dépenses cochées échues dans le cycle
- * − items wishlist cochés (déduits du cycle courant, sans date propre).
+ * Budget d'un cycle donné (courant, passé ou futur via `offset`).
+ * `remaining` ne déduit que les dépenses cochées POUR CE CYCLE (checkedExpenseIds) ;
+ * `projectedRemaining` déduit toutes les échéances du cycle, cochées ou non.
  */
-export function computeCurrentCycleBudget(params: {
-  startingCapital: number;
+export function computeCycleBudget(params: {
+  incomes: IncomeInput[];
   cycleStartDay: number;
   referenceDate: Date;
+  offset: number;
   expenses: ExpenseInput[];
+  checkedExpenseIds: ReadonlySet<string>;
   wishlistItems: WishlistInput[];
-}): CurrentCycleBudget {
-  const cycle = getCurrentCycleBounds(params.referenceDate, params.cycleStartDay);
+}): CycleBudget {
+  const cycle = getCycleBoundsOffset(params.referenceDate, params.cycleStartDay, params.offset);
+  const cycleKey = cycleKeyOf(cycle);
+  const totalIncome = totalIncomeForCycle(params.incomes);
+
+  const dueExpenses = params.expenses
+    .filter((e) => isExpenseDueInCycle(e, cycle))
+    .reduce((sum, e) => sum + e.amount, 0);
   const deductedExpenses = params.expenses
-    .filter((e) => e.isChecked && isExpenseDueInCycle(e, cycle))
+    .filter((e) => params.checkedExpenseIds.has(e.id) && isExpenseDueInCycle(e, cycle))
     .reduce((sum, e) => sum + e.amount, 0);
   const deductedWishlist = params.wishlistItems
-    .filter((w) => w.isPurchased)
+    .filter((w) => isWishlistItemPurchasedInCycle(w, cycle))
     .reduce((sum, w) => sum + w.budget, 0);
 
   return {
+    offset: params.offset,
     cycle,
+    cycleKey,
+    totalIncome,
+    dueExpenses,
     deductedExpenses,
     deductedWishlist,
-    remaining: params.startingCapital - deductedExpenses - deductedWishlist,
+    remaining: totalIncome - deductedExpenses - deductedWishlist,
+    projectedRemaining: totalIncome - dueExpenses - deductedWishlist,
   };
 }
 
-export interface CycleProjection {
-  cycle: CycleBounds;
-  projectedExpenses: number;
-  remaining: number;
-}
-
 /**
- * Projection sur `monthsAhead` cycles futurs. Chaque cycle repart du même capital
- * configuré (hypothèse : capital resaisi chaque mois) moins les occurrences
- * *projetées* des dépenses (cochées ou non — elles ne sont pas encore cochées dans
- * le futur). Les items wishlist ne sont pas récurrents et ne sont donc pas projetés.
+ * Projection sur une plage de cycles [fromOffset, toOffset]. Utilisée pour la bande
+ * "Prévisions" : elle ne connaît pas les coches par cycle (elles n'ont de sens que pour le
+ * cycle affiché), donc `remaining` y est toujours égal à `projectedRemaining`.
  */
-export function projectFutureCycles(params: {
-  startingCapital: number;
+export function projectCycles(params: {
+  incomes: IncomeInput[];
   cycleStartDay: number;
   referenceDate: Date;
-  monthsAhead: number;
+  fromOffset: number;
+  toOffset: number;
   expenses: ExpenseInput[];
-}): CycleProjection[] {
-  const projections: CycleProjection[] = [];
-  for (let offset = 0; offset <= params.monthsAhead; offset++) {
-    const cycle = getCycleBoundsOffset(params.referenceDate, params.cycleStartDay, offset);
-    const projectedExpenses = params.expenses
-      .filter((e) => isExpenseDueInCycle(e, cycle))
-      .reduce((sum, e) => sum + e.amount, 0);
-    projections.push({
-      cycle,
-      projectedExpenses,
-      remaining: params.startingCapital - projectedExpenses,
-    });
+  wishlistItems: WishlistInput[];
+}): CycleBudget[] {
+  const projections: CycleBudget[] = [];
+  for (let offset = params.fromOffset; offset <= params.toOffset; offset++) {
+    projections.push(
+      computeCycleBudget({
+        incomes: params.incomes,
+        cycleStartDay: params.cycleStartDay,
+        referenceDate: params.referenceDate,
+        offset,
+        expenses: params.expenses,
+        checkedExpenseIds: new Set(),
+        wishlistItems: params.wishlistItems,
+      }),
+    );
   }
   return projections;
 }

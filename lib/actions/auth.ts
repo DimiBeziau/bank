@@ -31,7 +31,7 @@ export async function signup(_prevState: AuthActionState, formData: FormData): P
     data: {
       email: parsed.data.email,
       passwordHash,
-      settings: { create: { startingCapital: 0, cycleStartDay: 1 } },
+      settings: { create: { cycleStartDay: 1 } },
       categories: { create: DEFAULT_CATEGORIES.map((c) => ({ name: c.name, color: c.color })) },
     },
   });
