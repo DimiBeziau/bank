@@ -38,7 +38,7 @@ export function ExpenseList({
   return (
     <GlassCard className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Dépenses</h2>
+        <h2 className="text-lg font-bold">Dépenses de ce cycle</h2>
         <div className="flex items-center gap-2">
           <Select
             value={typeFilter}
@@ -76,7 +76,7 @@ export function ExpenseList({
 
       <div className="flex flex-col divide-y divide-white/5">
         {filtered.length === 0 && (
-          <p className="text-muted py-6 text-center text-sm">Aucune dépense pour l&apos;instant.</p>
+          <p className="text-muted py-6 text-center text-sm">Aucune dépense ce cycle-ci.</p>
         )}
         {filtered.map((expense) => (
           <ExpenseRow

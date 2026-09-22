@@ -117,17 +117,19 @@ export default async function BudgetPage({
   const percentUsed = cycleBudget.totalIncome > 0 ? (spent / cycleBudget.totalIncome) * 100 : 0;
 
   const categoryDTOs: CategoryDTO[] = categories;
-  const expenseDTOs: ExpenseDTO[] = expenses.map((e) => ({
-    id: e.id,
-    name: e.name,
-    amount: e.amount,
-    categoryId: e.categoryId,
-    isOneTime: e.isOneTime,
-    dueDate: e.dueDate.toISOString(),
-    periodicityUnit: e.periodicityUnit,
-    periodicityValue: e.periodicityValue,
-    isChecked: checkedIdSet.has(e.id),
-  }));
+  const expenseDTOs: ExpenseDTO[] = expenses
+    .filter((e) => isExpenseDueInCycle(e, cycleBudget.cycle))
+    .map((e) => ({
+      id: e.id,
+      name: e.name,
+      amount: e.amount,
+      categoryId: e.categoryId,
+      isOneTime: e.isOneTime,
+      dueDate: e.dueDate.toISOString(),
+      periodicityUnit: e.periodicityUnit,
+      periodicityValue: e.periodicityValue,
+      isChecked: checkedIdSet.has(e.id),
+    }));
 
   const defaultDueDate = toDateInputValue(offset === 0 ? referenceDate : cycleBudget.cycle.start);
 
